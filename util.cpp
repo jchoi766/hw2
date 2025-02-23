@@ -10,21 +10,34 @@ std::string convToLower(std::string src)
     std::transform(src.begin(), src.end(), src.begin(), ::tolower);
     return src;
 }
-
 /** Complete the code to convert a string containing a rawWord
     to a set of words based on the criteria given in the assignment **/
 std::set<std::string> parseStringToWords(string rawWords)
 {
-
-
-
-
-
-
-
-
-
-
+  set<string> words;
+  //split at punctuation, each word has at least 2 character words 
+  //make every word lower case before putting in words 
+  stringstream ss(rawWords);
+  string word;
+  while (ss >> word) {
+    word = convToLower(word);
+    string subWord = "";
+  
+    for (int i = 0; i < word.length(); i++) {
+      if (isalpha(word[i])) { // not punctuation
+        subWord += word[i];
+      } else { // came across punctuation 
+        if (subWord.length() > 1) {
+          words.insert(subWord);
+        }
+        subWord = "";
+      }
+    }
+    if (subWord.length() > 1) {
+      words.insert(subWord);
+    }
+  }
+  return words;
 }
 
 /**************************************************

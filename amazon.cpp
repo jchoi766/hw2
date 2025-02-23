@@ -5,10 +5,13 @@
 #include <vector>
 #include <iomanip>
 #include <algorithm>
+
 #include "product.h"
 #include "db_parser.h"
 #include "product_parser.h"
 #include "util.h"
+
+#include "mydatastore.h"
 
 using namespace std;
 struct ProdNameSorter {
@@ -29,8 +32,7 @@ int main(int argc, char* argv[])
      * Declare your derived DataStore object here replacing
      *  DataStore type to your derived type
      ****************/
-    DataStore ds;
-
+    MyDataStore ds;
 
 
     // Instantiate the individual section and product parsers we want
@@ -100,10 +102,79 @@ int main(int argc, char* argv[])
                 done = true;
             }
 	    /* Add support for other commands here */
+            // ADD username search_hit_number 
+            else if (cmd == "ADD") {
+              string uName;
+              int hitIndex; 
+              ss >> uName;
+              if (!ss.fail()) {
+                User* user = ds.userExists(uName);
+                if (user != nullptr) {
+                  ss >> hitIndex;
+                  if (!ss.fail() && hitIndex >= 0) {
+                    //add product at hitIndex to user's cart 
+                    hitIndex -= 1;
+                    Product* product = hits[hitIndex];
+                    ds.addToCart(user, product);
 
-
-
-
+                  } else {
+                    // index is invalid / not provided 
+                    cout << "Invalid request" << endl;
+                  }
+                } else {
+                  // this user doesn't exist
+                  cout << "Invalid request" << endl;
+                }
+              } else {
+                //no username entered 
+                cout << "Invalid request" << endl;
+              }
+              
+            }
+            // VIEWCART username 
+            else if (cmd == "VIEWCART") {
+              string uName;
+              ss >> uName;
+              User* user = ds.userExists(uName);
+              
+              if (user != nullptr) {
+                vector<Product*>& cart = ds.getCart(user);
+                // print out the cart 
+                int indexNum = 1;
+                for (Product* p : cart) {
+                  cout << "Item " << indexNum << endl;
+                  cout << p->displayString() << endl;
+                  indexNum++;
+                }
+              } else cout << "Invalid username" << endl;
+            }
+            // BUYCART username
+            else if (cmd == "BUYCART") {
+              string uName;
+              ss >> uName;
+              User* user = ds.userExists(uName);
+              if (user != nullptr) {
+                //iterate through user's cart 
+                vector<Product*>::iterator it;
+                vector<Product*>& cart = ds.getCart(user);
+                for (it = cart.begin(); it != cart.end();) {
+                  Product* p = *it;
+                  double productPrice = p->getPrice();
+                  if (user->getBalance() >= productPrice && p->getQty() >= 1) {
+                    // if user has enough money and item is in stock -> 
+                    // reduce product's quantity by one 
+                    p->subtractQty(1);
+                    // product price debited from user's credit
+                    user->deductAmount(productPrice); 
+                    //remove item from user's cart 
+                    it = cart.erase(it); // returns next iterator after erasing current 
+                  } else {
+                    //nothing deleted - increment iterator to check next item in cart 
+                    it++;
+                  }
+                }
+              } else cout << "Invalid username" << endl;
+            }
             else {
                 cout << "Unknown command" << endl;
             }
